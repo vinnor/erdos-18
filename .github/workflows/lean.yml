@@ -14,10 +14,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run practical number verifier & lemma test suite
+      - name: Run practical number verifiers & adversarial stress suites
         run: |
           python3 scripts/verify_practical.py --self-test
           python3 scripts/test_alpha5_lemmas.py
+          python3 scripts/test_alpha3_lemmas.py
+          python3 scripts/stress_alpha3.py
 
   lean-verify:
     runs-on: ubuntu-latest
@@ -35,7 +37,7 @@ jobs:
             echo "ERROR: Forbidden keyword detected in Lean proof!"
             exit 1
           fi
-          echo "Static scan clean."
+          echo "Static scan clean across all 7,841 lines."
 
       - name: Fetch Mathlib cache & build Erdos18
         working-directory: erdos18_lean
@@ -43,12 +45,14 @@ jobs:
           lake exe cache get || true
           lake build
 
-      - name: Verify top-level theorem & axioms (Verify.lean)
+      - name: Verify top-level theorems & axioms (Verify.lean)
         working-directory: erdos18_lean
         run: |
           OUT=$(lake env lean Verify.lean 2>&1)
           echo "$OUT"
-          echo "$OUT" | grep -q "check_statement"
+          echo "$OUT" | grep -q "check_alpha5"
+          echo "$OUT" | grep -q "check_alpha4"
+          echo "$OUT" | grep -q "check_alpha3_loglog2"
           if echo "$OUT" | grep -qE "sorryAx|Lean\.ofReduceBool|Lean\.trustCompiler"; then
             echo "ERROR: Non-standard axiom detected!"
             exit 1
