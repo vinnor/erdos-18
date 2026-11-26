@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Lean / Lake build artifacts
+.lake/
+build/
+*.olean
+*.ilean
+*.trace
+
+# OS & temp
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.lock
+*.zip
