@@ -2,10 +2,10 @@
 """
 Prime-Field Carry-Free Verification Suite for h(n!) = O((log n)^3 log log n):
   Suite 1: Pointwise KL Contraction Lemma (c_1 = 1/484, empirical >= 0.312) & Universal F_q Dilation
-  Suite 2: 3-Factor Polya-Vinogradov Multiplicative Dilation on F_q^*
+  Suite 2: Elementary 2-Factor Smooth Pigeonhole Dilator c = c1*c2 mod q (zero character sums)
   Suite 3: Carry-Free Prime-Field Z/M'Z Covering Walk
-  Suite 4: End-to-End Arch 2B Representation of 1 <= t <= n! (80/80 PASS locked verify_practical.py)
-  Suite 5: Patched Stage 2 11-Prime Inequality, U_extra Margin & Binary Budget at m = 500,000
+  Suite 4: End-to-End Prime-Field Representation of 1 <= t <= n! (80/80 PASS verify_practical.py)
+  Suite 5: Stage 2 11-Prime Strip Inequality, U_extra Margin & Binary Budget at m = 500,000
 """
 import hashlib
 import math
@@ -120,32 +120,32 @@ def suite1_pointwise_kl_and_dilation():
     print("  SUITE 1 PASSED.\n")
 
 
-def suite2_three_factor_dilation():
+def suite2_two_factor_smooth_pigeonhole():
     print("=" * 72)
-    print("SUITE 2: 3-Factor Polya-Vinogradov Dilation c = c1*c2*c3 mod q")
+    print("SUITE 2: Elementary 2-Factor Smooth Pigeonhole Dilator (c = c1*c2 mod q)")
     print("=" * 72)
-    for n in [50, 100, 200, 400]:
-        M = max(2, int(0.2 * n))
-        ps = sieve_primes(n)
-        q = ps[-1]
-        dp1 = [0.0] * q
-        for a in range(1, M + 1):
-            dp1[a % q] += 1.0 / M
-        dp2 = [0.0] * q
-        for x in range(1, q):
-            if dp1[x] > 0:
-                for a in range(1, M + 1):
-                    dp2[(x * a) % q] += dp1[x] / M
-        dp3 = [0.0] * q
-        for x in range(1, q):
-            if dp2[x] > 0:
-                for a in range(1, M + 1):
-                    dp3[(x * a) % q] += dp2[x] / M
-        min_rel = min(dp3[x] * (q - 1) for x in range(1, q))
-        max_rel = max(dp3[x] * (q - 1) for x in range(1, q))
-        print(f"  n={n:3d}, M={M:2d}, q={q:3d}: (q-1)*P(c1*c2*c3=x) in [{min_rel:.4f}, {max_rel:.4f}]")
-        thresh = 0.25 if n < 100 else 0.5
-        assert min_rel > thresh
+    for m in [300, 400, 600, 1000]:
+        M = (14 * m) // 25
+        B = (7 * m) // 25
+        ps = sieve_primes(m)
+        big_primes = set(p for p in ps if B < p <= M)
+        # Since 2*(B+1) > M, the only integers in [1, M] not B-smooth are primes in (B, M].
+        smooth = [a for a in range(1, M + 1) if a not in big_primes]
+        q = ps[-1]  # largest prime <= m, satisfies M < q <= m
+        assert M < q <= m
+        assert len(smooth) > (q - 1) // 2
+        counts = [0] * q
+        for c1 in smooth:
+            for c2 in smooth:
+                counts[(c1 * c2) % q] += 1
+        min_cnt = min(counts[1:])
+        min_rel = min_cnt * (q - 1) / (len(smooth) * len(smooth))
+        print(
+            f"  m={m:4d}, |A(m)|={len(smooth):3d}, q={q:3d}: "
+            f"min_count={min_cnt:3d} (q/20={q/20:.1f}), (q-1)*P(c1*c2=x) >= {min_rel:.4f} (> 1/40=0.025)"
+        )
+        assert min_cnt >= q // 20
+        assert min_rel > 1.0 / 40.0
     print("  SUITE 2 PASSED.\n")
 
 
@@ -366,7 +366,7 @@ def build_arch2b_representation(n: int, target: int, rng: random.Random):
 
 def suite4_end_to_end_verification():
     print("=" * 72)
-    print("SUITE 4: End-to-End Arch 2B Validation against Locked verify_practical.py")
+    print("SUITE 4: End-to-End Prime-Field Validation against Locked verify_practical.py")
     print("=" * 72)
     vp_path = Path(__file__).resolve().parent / "verify_practical.py"
     h = sha256_file(vp_path)
@@ -392,7 +392,7 @@ def suite4_end_to_end_verification():
 
 def suite5_stage2_11prime_patch():
     print("=" * 72)
-    print("SUITE 5: Patched Stage 2 11-Prime Inequality & Thresholds at m = 500,000")
+    print("SUITE 5: Stage 2 11-Prime Inequality & Thresholds at m = 500,000")
     print("=" * 72)
     for m in [10000, 100000, 500000]:
         ps = sieve_primes(m)
@@ -452,7 +452,7 @@ def suite5_stage2_11prime_patch():
 
 if __name__ == "__main__":
     suite1_pointwise_kl_and_dilation()
-    suite2_three_factor_dilation()
+    suite2_two_factor_smooth_pigeonhole()
     suite3_carry_free_covering()
     suite4_end_to_end_verification()
     suite5_stage2_11prime_patch()

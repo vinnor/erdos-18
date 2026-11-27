@@ -6,7 +6,7 @@ import Erdos18.Alpha3Entropy
 /-!
 # Erdos18/Alpha3Covering.lean — Composed Parametric Mod-2^k Covering (`O((log k)^2 (log log k)^2)`)
 
-Formalizes Lemma 3A* and Lemma 3B* of `work/prover4.md` (cleared by `Breaker-3`):
+Formalizes the parametric mod-$2^k$ covering lemmas (`O((log k)^2 (log log k)^2)`):
 - Full-pool candidate divisor sets `cand0, candA, candB, candC` and max-cardinality `D_kt k t`.
 - `divPMF`: `1/2 δ_0 + 1/2 Unif(D_kt k t)` with exact entropy `log 2 + (1/2) log |D_kt k t|`.
 - `SigmaStar k = ∑ t < numScales k, psiNat (g_kt k t) ≤ C_sig * log (k + 2) * (log (log (k + 16)))^2`.

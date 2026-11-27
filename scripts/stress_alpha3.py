@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Adversarial Red-Team Stress & Counterexample Script for Prover-4 (Breaker-3).
-Attacks every inequality, regime boundary, constant, edge case, and propagation step
-in work/prover4.md:
+Adversarial High-Precision Stress & Counterexample Suite for Milestone 3 (O((log n)^3 (log log n)^2)).
+Stress-tests every inequality, regime boundary, constant, edge case, and propagation step:
   1. High-precision check of Lemma 1' (f4 convexity, monotonicity, 4q(1-q) >= (ln 2) f4(h2(q))).
   2. Exhaustive small-k (2 <= k <= 500) + huge-k (up to 2^1000) regime partition,
      disjointness/exhaustiveness, g_{k,t} in (0, 1], s-prime product < 2^{2^t},
@@ -552,4 +551,4 @@ if __name__ == "__main__":
     attack_2_regimes_and_chebyshev_consistency()
     attack_3_exact_Wj_and_adversarial_X()
     attack_4_lemma4_and_stage2_boundaries()
-    print("\nBREAKER-3 AUDIT RESULT: ZERO COUNTEREXAMPLES FOUND — ALL ATTACKS SURVIVED!")
+    print("\nADVERSARIAL STRESS RESULT: ZERO COUNTEREXAMPLES FOUND — ALL CHECKS PASSED!")

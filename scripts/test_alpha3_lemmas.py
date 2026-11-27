@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Verification & numerical stress-test suite for Prover-4 (Composition of Prover-1 and Prover-2):
+Verification & numerical stress-test suite for Milestone 3 (2-adic convex f4 proof):
   h(n!) = O((log n)^3 (log log n)^2)
 
 Tests:
@@ -657,4 +657,4 @@ if __name__ == "__main__":
     test_suite_3_exact_Wj()
     test_suite_4_mod_2k_covering()
     test_suite_5_telescoping_and_factorials()
-    print("\nALL PROVER-4 TESTS PASSED!")
+    print("\nALL ALPHA3 VERIFICATION TESTS PASSED!")

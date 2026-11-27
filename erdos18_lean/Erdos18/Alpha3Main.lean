@@ -4,7 +4,7 @@ import Erdos18.MainTheorem
 /-!
 # Erdos18/Alpha3Main.lean — Unconditional `h(n!) = O((log n)^3 (log log n)^2)` and `O((log n)^4)`
 
-Formalizes Lemma 4*, Stage 2*, and the main theorems of `work/prover4.md` (cleared by `Breaker-3`):
+Formalizes the telescoping carry recursion, Stage 2 tail reduction, and Milestone 2–3 theorems:
 1. `Erdos18.erdos18_alpha3_loglog2`:
      `∃ C : ℝ, ∀ n ≥ 2, ∀ t, 1 ≤ t → t ≤ n! → ∃ S : Finset ℕ, (∀ d ∈ S, d ∣ n! ∧ 0 < d) ∧ S.sum id = t ∧ (S.card : ℝ) ≤ C * (Real.log n)^3 * (Real.log (Real.log (n + 16)))^2`.
 2. `Erdos18.erdos18_alpha4`:

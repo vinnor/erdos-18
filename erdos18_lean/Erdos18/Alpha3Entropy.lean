@@ -4,7 +4,7 @@ import Mathlib.Analysis.Convex.Deriv
 /-!
 # Erdos18/Alpha3Entropy.lean — Sharp Convex Bitwise Entropy Gain (`f4nat`)
 
-Formalizes Lemma 1' and Lemma 2' (Prover-1 / Prover-4 Loss #1 fix) in natural-log units (nats),
+Formalizes the sharp convex entropy-variance and bitwise gain lemmas in natural-log units (nats),
 matching `Erdos18.Entropy`:
 - `f4nat u = if u ≤ 0 then 0 else u / Real.log (4 / u)` on `[0, 1]`.
 - `psiNat u = Real.log (4 / u) / u = (f4nat u)⁻¹` on `(0, 1]`.

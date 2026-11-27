@@ -108,7 +108,7 @@ Full self-contained mathematical exposition is in [`PROOF.md`](PROOF.md) and [`p
 | 2-factor smooth pigeonhole dilator | $\mathbb{P}(c_1 c_2 \equiv x \pmod q) \ge \frac{1/40}{q-1}$ | **$+0$** | Elementary `Finset` pigeonhole on $0.28m$-smooth $[1, 0.56m]$ (zero character sums) |
 | Greedy CRT coordinate matching | $\sum_{r=1}^{N/2} \frac{1}{r\ln(N/r)} = \ln\ln N + O(1)$ | $+1$ (+ $\log\log n$) | Injective $r$-prime subsets across 16-subinterval Bertrand prime band |
 | Contraction tail & mod-$M'$ covering | $2R(m) = O\big((\log m)^2 \log\log m\big)$ | $+1$ (from $\ln(2m)$) | Disjoint tag primes $Q_{\mathrm{tag}}$ + pigeonhole sumset cover |
-| Carry & exact digit tail | $O(\log m)$ binary terms | **$+0$** | Carry $< m^5 M' \implies$ direct binary quotient; no $\sqrt{B}$ carry recursion |
+| Exact digit quotient tail | $O(\log m)$ binary terms | **$+0$** | Greedy $M' \le \lfloor r/(2m^5)\rfloor$; mod-$M'$ cover sum $< m^5 M' \implies$ direct binary quotient |
 | Mixed-radix Stage 1 + 11-prime Stage 2 | $O(\log n)$ levels | $+1$ | Canonical $\frac{\log(n!)}{m}$ factor + $m \to m/2$ recursion |
 | **Total** | **$O\!\left((\log n)^3 \log\log(n+16)\right)$** | **$\alpha = 3 \cdot \log\log$** | **~6 powers + one $\log\log n$ below $\alpha = 9$** |
 
@@ -133,8 +133,9 @@ Full self-contained mathematical exposition is in [`PROOF.md`](PROOF.md) and [`p
 | [`erdos18_lean/Erdos18/MainTheorem.lean`](erdos18_lean/Erdos18/MainTheorem.lean) | 1,424 | `erdos18_alpha5` + reusable mixed-radix Stage 1 machinery |
 | [`erdos18_lean/Verify.lean`](erdos18_lean/Verify.lean) | 34 | `_root_`-locked statement check & `#print axioms` for all 4 bounds |
 | [`lean/Erdos18Alpha5.lean`](lean/Erdos18Alpha5.lean) | 498 | Standalone zero-dependency pure Lean 4 combinatorial core |
-| [`scripts/verify_practical.py`](scripts/verify_practical.py) | 152 | Exact DP for small $h(n!)$ & strict certificate verifier |
-| [`scripts/test_primefield.py`](scripts/test_primefield.py) | 459 | Numerical & end-to-end verification suite for the prime-field proof (80/80 PASS) |
+| [`scripts/verify_practical.py`](scripts/verify_practical.py) | 153 | Exact DP for small $h(n!)$ & strict certificate verifier |
+| [`scripts/test_primefield.py`](scripts/test_primefield.py) | 459 | Numerical & end-to-end verification suite for the prime-field proof (2-factor smooth pigeonhole + 80/80 PASS) |
+| [`scripts/test_alpha5_lemmas.py`](scripts/test_alpha5_lemmas.py) | — | Numerical & end-to-end verification suite for Milestone 1 |
 | [`scripts/test_alpha3_lemmas.py`](scripts/test_alpha3_lemmas.py) | — | Numerical & end-to-end verification suite for Milestone 3 |
 | [`scripts/stress_alpha3.py`](scripts/stress_alpha3.py) | — | High-precision 80-digit & adversarial stress tests (up to $k = 2^{1000}$) |
 

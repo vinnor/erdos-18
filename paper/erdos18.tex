@@ -74,18 +74,19 @@ Historically, Erd\H{o}s~\cite{Er74b} gave $h(n!) < n$, Vose~\cite{Vo85} construc
 
 \begin{table}[ht]
 \centering
+\small
 \caption{Progression of upper bounds on $h(n!)$ for Erd\H{o}s Problem~\#18.}\label{tab:history}
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{@{}llp{5.5cm}@{}}
 \toprule
 Reference & Upper Bound on $h(n!)$ & Method / Verification \\
 \midrule
 Erd\H{o}s (1974)~\cite{Er74b} & $< n$ & Elementary induction \\
 Tenenbaum--Yokota / Yokota~\cite{TY90,Yo95} & $O(n/(\log n)^{1/2-\varepsilon})$ & Decreasing greedy \\
 Hughes (Sep 2026)~\cite{Hughes26} & $(2\log 2 + o(1))\,n/\log n$ & Reciprocal divisor gaps \\
-\texttt{conjectures.io} (Sep 2026) & $n^{o(1)}$ & Radix + $L^2$ flattening (Lean~4) \\
+\texttt{conjectures.io} (Sep 2026) & $n^{o(1)}$ & Radix + $L^2$ flattening (claimed, Lean~4) \\
 Howe et al.\ (Nov 20, 2026)~\cite{HHKK26} & $O((\log n)^9)$ & Harmonic shifts + entropy (Lean~4) \\
 This repo (2-adic milestone) & $O((\log n)^3(\log\log n)^2)$ & Convex $f_4$ + $s$-prime blocks (Lean~4) \\
-\textbf{This work (Theorem~\ref{thm:main})} & $\boldsymbol{O((\log n)^3\log\log n)}$ & \textbf{Carry-free $\prod \F_q$ + 2-factor pigeonhole (Lean~4)} \\
+\textbf{This work (Theorem~\ref{thm:main})} & $\boldsymbol{O((\log n)^3\log\log n)}$ & \textbf{Carry-free $\prod \F_q$ + 2-factor smooth pigeonhole (Lean~4)} \\
 \midrule
 Counting lower bound & $\Omega((\log n)^2)$ & Information-theoretic floor \\
 \bottomrule
@@ -104,7 +105,7 @@ Unconditionally, $h(n!) = O((\ln n)^3 \ln\ln(n+16)) = O((\ln n)^4)$, hence $h(n!
 \end{corollary}
 
 \subsection*{Notation}
-All entropies are measured in natural logarithms (nats): for a distribution $p$ on $\Z/q\Z$, $H_{\mathrm{nat}}(p) := -\sum_{x \in \Z/q\Z} p(x)\ln p(x)$ and $\Delta_q^{\mathrm{nat}}(p) := \ln q - H_{\mathrm{nat}}(p) = D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, u_q)$, where $u_q$ is the uniform distribution on $\Z/q\Z$.
+Throughout, $\log$ and $\ln$ both denote the natural logarithm (and $\log_2$ denotes the base-$2$ logarithm); the shift $+16$ in $\ln\ln(n+16)$ ensures $\ln\ln(n+16) > 1$ for all $n \ge 2$. Write $y\# := \prod_{p \le y} p$ for the primorial. All entropies are measured in nats: for a distribution $p$ on $\Z/q\Z$, $H_{\mathrm{nat}}(p) := -\sum_{x \in \Z/q\Z} p(x)\ln p(x)$ and $\Delta_q^{\mathrm{nat}}(p) := \ln q - H_{\mathrm{nat}}(p) = D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, u_q)$, where $u_q$ is the uniform distribution on $\Z/q\Z$.
 
 % ============================================================================
 \section{Pointwise KL Contraction and Universal $\F_q$ Dilation}\label{sec:entropy}
@@ -128,7 +129,7 @@ If $r \le 1/q$, then $\theta \le 0$ and $\ln(1+z) \le z$ gives
   = -\sum_x p(x)\ln\bigl(1 + \theta(u_x - 1)\bigr)
   \ge -\theta\Bigl(q\sum_x p(x)^2 - 1\Bigr) \ge 0
 \]
-by Cauchy--Schwarz. If $r \in (1/q, 1/2]$, then $\theta \in (0, 1/2)$ and $\theta < r$. Writing $B(u) := u\ln u - (u-1)$ and $g_\theta(u) := u\ln\frac{u}{\theta u + 1 - \theta} - (1-\theta)(u-1)$, we have $\Delta_q^{\mathrm{nat}}(p) = \frac{1}{q}\sum_x B(u_x)$ and $D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_r(p)) = \frac{1}{q}\sum_x g_\theta(u_x)$. For $u \in [0, 10/\theta]$, $B(1)=B'(1)=g_\theta(1)=g_\theta'(1)=0$ and $g_\theta''(u) = \frac{(1-\theta)^2}{u(\theta u + 1 - \theta)^2} \ge \frac{1/4}{121 u} = \frac{1}{484} B''(u)$, integrating twice to $g_\theta(u) \ge \frac{1}{484} B(u)$. For $u \in (10/\theta, q]$, $u > 20 > e$, $\theta u + 1 - \theta < \frac{11}{10}\theta u$, and $\ln(1/\theta) - (1-\theta) - \ln(11/10) > 0.14\ln(1/\theta) > 0.14\ln(1/r)$, whence $g_\theta(u) > 0.14\,u\ln(1/r) \ge \frac{1}{484}\frac{\ln(1/r)}{\ln q} B(u)$.
+by Cauchy--Schwarz. If $r \in (1/q, 1/2]$, then $\theta \in (0, 1/2)$ and $\theta < r$. Writing $B(u) := u\ln u - (u-1)$ and $g_\theta(u) := u\ln\frac{u}{\theta u + 1 - \theta} - (1-\theta)(u-1)$, we have $\Delta_q^{\mathrm{nat}}(p) = \frac{1}{q}\sum_x B(u_x)$ and $D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_r(p)) = \frac{1}{q}\sum_x g_\theta(u_x)$. For $u \in [0, 10/\theta]$, $B(1)=B'(1)=g_\theta(1)=g_\theta'(1)=0$ and $g_\theta''(u) = \frac{(1-\theta)^2}{u(\theta u + 1 - \theta)^2} \ge \frac{1/4}{121 u} = \frac{1}{484} B''(u)$, integrating twice to $g_\theta(u) \ge \frac{1}{484} B(u) \ge \frac{1}{484}\frac{\ln(1/r)}{\ln q} B(u)$ since $B(u) \ge 0$ and $\ln(1/r) < \ln q$. For $u \in (10/\theta, q]$, $u > 20 > e$, $\theta u + 1 - \theta < \frac{11}{10}\theta u$, and $\ln(1/\theta) - (1-\theta) - \ln(11/10) > 0.14\ln(1/\theta) > 0.14\ln(1/r)$, whence $g_\theta(u) > 0.14\,u\ln(1/r) \ge \frac{1}{484}\frac{\ln(1/r)}{\ln q} B(u)$.
 \end{proof}
 
 \begin{lemma}[Universal $\F_q$ dilation entropy gain]\label{lem:fqgain}
@@ -140,7 +141,7 @@ Let $q \ge 3$ be prime, let $U, V$ be independent random variables on $\F_q$, an
 \end{lemma}
 
 \begin{proof}
-Since $H_{\mathrm{nat}}(U+cV) - H_{\mathrm{nat}}(U) \ge 0$ for every $c \in \F_q^*$, it suffices to treat uniform $W(c) = 1/(q-1)$. Let $p(x) := \mathbb{P}(U=x)$ and $r(y) := \mathbb{P}(V=y)$. By the exact Jensen-gap identity for $-t\ln t$ and the substitution $x' = x - cy$,
+Since $H_{\mathrm{nat}}(U+cV) - H_{\mathrm{nat}}(U) \ge 0$ for every $c \in \F_q^*$, it suffices to treat uniform $W(c) = 1/(q-1)$. Let $p(x) := \mathbb{P}(U=x)$ and $r(y) := \mathbb{P}(V=y)$. If $\max_y r(y) = 1$, then $H_{\mathrm{nat}}(V) = 0$ and the right-hand side is $\le 0 \le \mathrm{LHS}$. Otherwise $1 - r(y) > 0$ for all $y \in \F_q$; by the exact Jensen-gap identity for $-t\ln t$ and the substitution $x' = x - cy$,
 \[
   H_{\mathrm{nat}}(U+cV) - H_{\mathrm{nat}}(U)
   = \sum_{y \in \F_q} r(y) \sum_{x' \in \F_q} p(x') \ln\frac{p(x')}{r(y)p(x') + (1-r(y))\,t_c(x',y)},
@@ -190,16 +191,20 @@ For~(3), $A(m)$ injects into $\F_q^*$ because $14m/25 < q$. For any $x \in \F_q^
 We assemble Theorem~\ref{thm:main} in \texttt{Erdos18/PrimeFieldCovering.lean} and \texttt{Erdos18/PrimeFieldMain.lean}.
 
 \begin{proposition}[Adaptive CRT contraction and mod-$M'$ covering]\label{prop:crt}
-Using a $16$-subinterval quantitative Bertrand prime band (\texttt{Chebyshev.lean}), partition primes $\le m$ into a disjoint base pool $P_{\mathrm{pool}}$, tag primes $Q_{\mathrm{tag}}$, and target strip primes $Q_{\mathrm{strip}}$ with $M_{\mathrm{strip}} := \prod_{q \in Q_{\mathrm{strip}}} q$ and a practical core divisor $M_{\mathrm{core}}(m) \mid m!$. For any nonempty subset $Q' \subseteq Q_{\mathrm{strip}}$ with $M' := \prod_{q \in Q'} q$:
+For $m \ge 4096$, define the base prime pool $P_{\mathrm{pool}} := \{p \text{ prime} : 2 \le p \le m/8\}$ (with $N := |P_{\mathrm{pool}}|$) and the core divisor
+\[
+  M_{\mathrm{core}}(m) := 2^{\lfloor m/4 \rfloor}\, m\#\, \lfloor m/3 \rfloor\#^2\, \lfloor \sqrt{m} \rfloor\#^{2\lfloor \log_2 m \rfloor} \;\Big|\; m!,
+\]
+which satisfies $M_{\mathrm{core}}(m) \le 2^{6m}$ and is practical for all $m \ge 20$. Dividing $(m/2, m]$ into $16$ equal subintervals and choosing the densest subinterval via quantitative Bertrand (\texttt{Chebyshev.lean}) produces an upper endpoint $m_{\mathrm{dil}} \in (m/2, m]$ and two additional prime subsets $Q_{\mathrm{tag}}, Q_{\mathrm{strip}} \subset (\lfloor 14 m_{\mathrm{dil}}/25 \rfloor, m_{\mathrm{dil}}]$ pairwise disjoint from $P_{\mathrm{pool}}$ and from each other, with $12 \le |Q_{\mathrm{strip}}| \le \lfloor N/2 \rfloor$ and $M_{\mathrm{strip}} := \prod_{q \in Q_{\mathrm{strip}}} q$. For any nonempty subset $Q' \subseteq Q_{\mathrm{strip}}$ with $M' := \prod_{q \in Q'} q$:
 \begin{enumerate}
-  \item \emph{(Adaptive single-step contraction)} For every distribution $X$ on $\Z/M'\Z$, ordering $Q'$ by decreasing conditional coordinate deficit via the CRT chain rule and choosing the squarefree $r$-prime subset size $r \in \{1,\dots,\lfloor N/2 \rfloor\}$ greedily yields a divisor law $Y = p_{\mathrm{tag}} c_1 c_2 Z_r \mid M_{\mathrm{core}}(m)$ (with $c_1, c_2 \in A(m)$) satisfying
+  \item \emph{(Adaptive single-step contraction)} For every distribution $X$ on $\Z/M'\Z$, ordering $Q'$ by decreasing conditional coordinate deficit via the CRT chain rule and choosing the subset size $r \in \{1,\dots,|Q'|\}$ (with top-$r$ coordinate subset $Q_S \subseteq Q'$) greedily yields a divisor law $Y = p_{\mathrm{tag}} c_1 c_2 M_{\mathrm{comp}} Z_r \mid M_{\mathrm{core}}(m)$—where $c_1, c_2 \in A(m_{\mathrm{dil}})$, $M_{\mathrm{comp}} := \prod_{q \in Q' \setminus Q_S} q$ zeros out all coordinates outside $Q_S$, and $Z_r$ is uniform over squarefree $r$-prime products from $P_{\mathrm{pool}}$—satisfying
   \[
     H_{\mathrm{nat}}(X + Y) - H_{\mathrm{nat}}(X) \;\ge\; \eta\, \Delta_{M'}^{\mathrm{nat}}(X),
     \qquad \eta \ge \frac{1}{193600\,\ln m\,(\ln\ln(m+16)+4)}.
   \]
   Here the $\ln\ln(m+16)$ factor arises solely from the injective harmonic sum $\sum_{r=1}^{\lfloor N/2 \rfloor} \frac{1}{r\ln(N/r)} = \ln\ln N + O(1)$.
-  \item \emph{(Mod-$M'$ covering)} Iterating~(1) across $2R(m) = O((\ln m)^2 \ln\ln(m+16))$ draws with pairwise distinct tag primes $p_{\mathrm{tag}} \in Q_{\mathrm{tag}}$ covers every residue class modulo $M'$ as a sum of at most $2R(m)$ strictly distinct positive divisors of $M_{\mathrm{core}}(m)$, each $< m^3 M'$ and not divisible by $M'$.
-  \item \emph{(Exact carry-free digit representation)} Every $r \in [1, M_{\mathrm{strip}}/m^5)$ is a sum of at most $2R(m) + 6\log_2 m + 8$ strictly distinct positive divisors of $M_{\mathrm{core}}(m)$: subtracting the mod-$M_{\mathrm{strip}}$ cover leaves a nonnegative quotient $< 2m^6$ multiplied by $M_{\mathrm{strip}}$, which is written directly in binary using powers of $2$ dividing $M_{\mathrm{core}}(m)$.
+  \item \emph{(Mod-$M'$ covering)} Iterating~(1) across $2R(m) = O((\ln m)^2 \ln\ln(m+16))$ draws with pairwise distinct tag primes $p_{\mathrm{tag}} \in Q_{\mathrm{tag}}$ (using $\Delta_{M'}^{\mathrm{nat}}(X_0) \le \ln M_{\mathrm{core}}(m) \le 6m\ln 2$) covers every residue class modulo $M'$ as a sum of at most $2R(m)$ strictly distinct positive divisors of $M_{\mathrm{core}}(m)$, each $< m^3 M'$ and not divisible by $M'$.
+  \item \emph{(Exact carry-free digit representation)} Every $r \in [1, M_{\mathrm{strip}}/m^5)$ is a sum of at most $2R(m) + 6\log_2 m + 8$ strictly distinct positive divisors of $M_{\mathrm{core}}(m)$: if $r < 2m^6$, write $r$ directly in binary using powers of $2$ dividing $M_{\mathrm{core}}(m)$; if $2m^6 \le r < M_{\mathrm{strip}}/m^5$, greedily pick a nonempty subset $Q' \subseteq Q_{\mathrm{strip}}$ whose product $M' := \prod_{q \in Q'} q$ satisfies $M' \le \lfloor r/(2m^5) \rfloor < m M'$, subtract a mod-$M'$ cover $S_1$ from~(2) (with total sum $< m^5 M' \le r/2 < r$), and write the nonnegative quotient $(r - \sum S_1)/M' < 2m^6$ directly in binary as a sum of terms $2^b M'$.
 \end{enumerate}
 \end{proposition}
 
@@ -259,7 +264,7 @@ G.~Tenenbaum and H.~Yokota, \emph{Length and denominators of Egyptian fractions 
 M.~D. Vose, \emph{Egyptian fractions}, Bull. London Math. Soc. \textbf{17} (1985), no.~1, 21--24.
 
 \bibitem{Yo95}
-H.~Yokota, \emph{On a problem of Erd\H{o}s and Graham}, J. Number Theory \textbf{50} (1995), no.~1, 79--86.
+H.~Yokota, \emph{On a knapsack problem involving divisors of $n!$}, Res. Bull. Hiroshima Inst. Tech. \textbf{29} (1995), 25--28.
 
 \end{thebibliography}
 
