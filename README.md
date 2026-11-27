@@ -18,7 +18,7 @@ $$h(n!) = O\!\left((\log n)^3 \log\log(n+16)\right)$$
 
 ---
 
-## 🐦 The Short Version
+## 🐦‍⬛ The Short Version
 
 A positive integer $m$ is **practical** if every $1 \le t \le m$ can be written as a sum of **distinct** positive divisors of $m$. Let $h(m)$ be the smallest number of summands that always suffices.
 
@@ -183,6 +183,6 @@ python3 scripts/test_primefield.py
 
 <div align="center">
 
-<sub>🐦 Started at $\alpha = 9$. Landed at $\alpha = 3 \cdot \log\log$. Zero carries, zero character sums, 13,586 lines of Lean 4.</sub>
+<sub>🐦‍⬛ Started at $\alpha = 9$. Landed at $\alpha = 3 \cdot \log\log$. Zero carries, zero character sums, 13,586 lines of Lean 4.</sub>
 
 </div>
