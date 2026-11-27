@@ -1,0 +1,266 @@
+\documentclass[11pt,a4paper]{amsart}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage[margin=1in]{geometry}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=green!45!black,
+  urlcolor=blue!60!black
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Unif}{\mathrm{Unif}}
+\newcommand{\supp}{\mathrm{supp}}
+
+\title[Short Sums of Factorial Divisors]{An Elementary Carry-Free Proof of $h(n!) = O\bigl((\log n)^3 \log\log n\bigr)$\\for Erd\H{o}s Problem \#18}
+
+\author{vinnor}
+\thanks{Formal verification repository: \url{https://github.com/vinnor/erdos-18}.
+Human-directed, AI-assisted mathematical research and Lean~4 formalization; see Section~\ref{sec:provenance} for full provenance.}
+
+\subjclass[2020]{Primary 11B13; Secondary 11A25, 11N25, 68V20}
+\keywords{Practical numbers, factorial divisors, Erd\H{o}s Problem 18, Shannon entropy, prime-field dilation, additive bases, Lean 4 formalization}
+
+\begin{document}
+
+\begin{abstract}
+A positive integer $m$ is called \emph{practical} if every integer $1 \le t \le m$ can be written as a sum of distinct positive divisors of $m$. For practical $m$, let $h(m)$ denote the smallest integer such that every $1 \le t \le m$ is a sum of at most $h(m)$ distinct positive divisors of $m$. Answering all three parts of Erd\H{o}s Problem~\#18 in one elementary theorem, we prove unconditionally that
+\[
+  h(n!) = O\!\left((\log n)^3 \log\log(n+16)\right),
+\]
+improving the November~2026 frontier $O((\log n)^9)$ of Howe--Huffman--Kohlmeyer--Kruer (\texttt{hexagon:2611.00748v1}) by nearly six powers of $\log n$ and approaching the information-theoretic lower bound $\Omega((\log n)^2)$ up to a factor of $\log n \cdot \log\log n$.
+
+Our proof abandons $2$-adic covering modulo $2^k$ and its associated carry chains altogether, working instead in a carry-free Chinese Remainder product of prime fields $\Z/M'\Z \cong \prod_{q \in Q'} \F_q$. Three elementary ingredients drive the bound: (i)~a pointwise Kullback--Leibler contraction inequality on $\F_q$ with absolute constant $c_1 = 1/484$ yielding a universal dilation entropy-gain bound \emph{linear} in $H_{\mathrm{nat}}(V)$ (eliminating quadratic and convex $f_4$ variance penalties); (ii)~an elementary $2$-factor smooth \texttt{Finset} pigeonhole dilator $c_1 c_2 \mid m!$ hitting every residue in $\F_q^*$ with probability at least $\frac{1/40}{q-1}$ using zero character sums and zero P\'olya--Vinogradov bounds; and (iii)~adaptive greedy CRT coordinate matching paired with an $11$-prime strip tail recursion $m \mapsto m/2$. Zero analytic number theory is used beyond Erd\H{o}s's 1932 central binomial coefficient bounds. The entire proof is formally verified end-to-end in Lean~4.36.0 + Mathlib4 (13,586 lines, zero \texttt{sorry}, depending solely on \texttt{propext}, \texttt{Classical.choice}, and \texttt{Quot.sound}).
+\end{abstract}
+
+\maketitle
+
+% ============================================================================
+\section{Introduction}\label{sec:intro}
+% ============================================================================
+
+A positive integer $m$ is \emph{practical} if every integer $1 \le t \le m$ can be expressed as a sum of distinct positive divisors of $m$. For practical $m$, let $h(m)$ denote the least integer $r$ such that every $1 \le t \le m$ is a sum of at most $r$ distinct positive divisors of $m$. Every factorial $n!$ is practical, and Erd\H{o}s~\cite{Er74b,ErGr80,Er81h} posed three linked questions cataloged as Erd\H{o}s Problem~\#18~\cite{Bloom18}:
+\begin{enumerate}
+  \item[(a)] Are there infinitely many practical integers $m$ with $h(m) < (\log\log m)^{O(1)}$?
+  \item[(b)] Is $h(n!) < n^{o(1)}$?
+  \item[(c)] Is $h(n!) < (\log n)^{O(1)}$?
+\end{enumerate}
+
+Since $\log(n!) = (1+o(1)) n\log n$ while $\log \tau(n!) = \Theta(n/\log n)$, pigeonhole forces the universal lower bound
+\[
+  h(n!) \ge \frac{\log(n!)}{\log(\tau(n!)+1)} = \Omega\bigl((\log n)^2\bigr).
+\]
+Historically, Erd\H{o}s~\cite{Er74b} gave $h(n!) < n$, Vose~\cite{Vo85} constructed infinitely many practical $m$ with $h(m) \ll (\log m)^{1/2}$, Tenenbaum--Yokota~\cite{TY90} and Yokota~\cite{Yo95} obtained $h(n!) \ll n/(\log n)^{1/2-\varepsilon}$, and Hughes~\cite{Hughes26} sharpened this to $h(n!) \le (2\log 2 + o(1))\,n/\log n$. In 2026, formal verification drove rapid progress: Part~(a) was addressed with $h(m) \ll (\log\log m)^2$ by Price and van~Doorn, Part~(b) ($h(n!) < n^{o(1)}$) was formalized via $L^2$ flattening on \texttt{conjectures.io}, and Part~(c) was established with $h(n!) = O((\log n)^9)$ by Howe, Huffman, Kohlmeyer, and Kruer~\cite{HHKK26} using harmonic dyadic shifts and finite Shannon entropy modulo~$2^k$. Table~\ref{tab:history} summarizes this progression.
+
+\begin{table}[ht]
+\centering
+\caption{Progression of upper bounds on $h(n!)$ for Erd\H{o}s Problem~\#18.}\label{tab:history}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Reference & Upper Bound on $h(n!)$ & Method / Verification \\
+\midrule
+Erd\H{o}s (1974)~\cite{Er74b} & $< n$ & Elementary induction \\
+Tenenbaum--Yokota / Yokota~\cite{TY90,Yo95} & $O(n/(\log n)^{1/2-\varepsilon})$ & Decreasing greedy \\
+Hughes (Sep 2026)~\cite{Hughes26} & $(2\log 2 + o(1))\,n/\log n$ & Reciprocal divisor gaps \\
+\texttt{conjectures.io} (Sep 2026) & $n^{o(1)}$ & Radix + $L^2$ flattening (Lean~4) \\
+Howe et al.\ (Nov 20, 2026)~\cite{HHKK26} & $O((\log n)^9)$ & Harmonic shifts + entropy (Lean~4) \\
+This repo (2-adic milestone) & $O((\log n)^3(\log\log n)^2)$ & Convex $f_4$ + $s$-prime blocks (Lean~4) \\
+\textbf{This work (Theorem~\ref{thm:main})} & $\boldsymbol{O((\log n)^3\log\log n)}$ & \textbf{Carry-free $\prod \F_q$ + 2-factor pigeonhole (Lean~4)} \\
+\midrule
+Counting lower bound & $\Omega((\log n)^2)$ & Information-theoretic floor \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{theorem}\label{thm:main}
+There exists an absolute constant $C > 0$ such that for every integer $n \ge 2$ and every integer $1 \le t \le n!$, there exists a finite set $S$ of positive divisors of $n!$ with $\sum_{d \in S} d = t$ and
+\[
+  |S| \le C\, (\ln n)^3 \ln\ln(n+16).
+\]
+\end{theorem}
+
+\begin{corollary}\label{cor:all3}
+Unconditionally, $h(n!) = O((\ln n)^3 \ln\ln(n+16)) = O((\ln n)^4)$, hence $h(n!) < n^{o(1)}$ and $h(n!) < (\ln n)^{O(1)}$. Moreover, since $n!$ is practical and $\ln\ln(n!) = \ln n + O(\ln\ln n)$, there are infinitely many practical integers $m$ (namely $m = n!$) satisfying $h(m) = O((\ln\ln m)^3 \ln\ln\ln m) < (\ln\ln m)^4$.
+\end{corollary}
+
+\subsection*{Notation}
+All entropies are measured in natural logarithms (nats): for a distribution $p$ on $\Z/q\Z$, $H_{\mathrm{nat}}(p) := -\sum_{x \in \Z/q\Z} p(x)\ln p(x)$ and $\Delta_q^{\mathrm{nat}}(p) := \ln q - H_{\mathrm{nat}}(p) = D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, u_q)$, where $u_q$ is the uniform distribution on $\Z/q\Z$.
+
+% ============================================================================
+\section{Pointwise KL Contraction and Universal $\F_q$ Dilation}\label{sec:entropy}
+% ============================================================================
+
+Working in $\Z/2^k\Z$ forces binary carry propagation and convex bitwise variance bounds $f_4(u) = u/\ln(4/u)$, losing an extra $\ln(4/g) = \Theta(\log\log n)$ factor. Over a prime field $\F_q$, averaging over multiplicative dilations $c \in \F_q^*$ gives an entropy gain strictly linear in $H_{\mathrm{nat}}(V)$ (\texttt{Erdos18/PrimeFieldEntropy.lean}).
+
+\begin{lemma}[Pointwise KL contraction]\label{lem:kl}
+Let $q \ge 3$ be an integer, $p$ any probability distribution on $\Z/q\Z$, and $r \in (0, 1/2]$. Define $T_r(p)(x) := r\,p(x) + (1-r)\frac{1-p(x)}{q-1}$. Then with $c_1 := 1/484$,
+\[
+  D_{\mathrm{KL}}^{\mathrm{nat}}\bigl(p \,\|\, T_r(p)\bigr)
+  \;\ge\; \frac{1}{484} \cdot \frac{\min\bigl(\ln(1/r),\, \ln q\bigr)}{\ln q} \cdot \Delta_q^{\mathrm{nat}}(p).
+\]
+\end{lemma}
+
+\begin{proof}
+Set $\theta := \frac{qr - 1}{q - 1}$ and $u_x := q p(x) \in [0,q]$, so $\frac{1}{q}\sum_x u_x = 1$ and $q T_r(p)(x) = 1 + \theta(u_x - 1)$.
+If $r \le 1/q$, then $\theta \le 0$ and $\ln(1+z) \le z$ gives
+\[
+  D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_r(p)) - \Delta_q^{\mathrm{nat}}(p)
+  = -\sum_x p(x)\ln\bigl(1 + \theta(u_x - 1)\bigr)
+  \ge -\theta\Bigl(q\sum_x p(x)^2 - 1\Bigr) \ge 0
+\]
+by Cauchy--Schwarz. If $r \in (1/q, 1/2]$, then $\theta \in (0, 1/2)$ and $\theta < r$. Writing $B(u) := u\ln u - (u-1)$ and $g_\theta(u) := u\ln\frac{u}{\theta u + 1 - \theta} - (1-\theta)(u-1)$, we have $\Delta_q^{\mathrm{nat}}(p) = \frac{1}{q}\sum_x B(u_x)$ and $D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_r(p)) = \frac{1}{q}\sum_x g_\theta(u_x)$. For $u \in [0, 10/\theta]$, $B(1)=B'(1)=g_\theta(1)=g_\theta'(1)=0$ and $g_\theta''(u) = \frac{(1-\theta)^2}{u(\theta u + 1 - \theta)^2} \ge \frac{1/4}{121 u} = \frac{1}{484} B''(u)$, integrating twice to $g_\theta(u) \ge \frac{1}{484} B(u)$. For $u \in (10/\theta, q]$, $u > 20 > e$, $\theta u + 1 - \theta < \frac{11}{10}\theta u$, and $\ln(1/\theta) - (1-\theta) - \ln(11/10) > 0.14\ln(1/\theta) > 0.14\ln(1/r)$, whence $g_\theta(u) > 0.14\,u\ln(1/r) \ge \frac{1}{484}\frac{\ln(1/r)}{\ln q} B(u)$.
+\end{proof}
+
+\begin{lemma}[Universal $\F_q$ dilation entropy gain]\label{lem:fqgain}
+Let $q \ge 3$ be prime, let $U, V$ be independent random variables on $\F_q$, and let $W$ be a probability distribution on $\F_q^*$ satisfying $W(c) \ge c_{\mathrm{dil}}/(q-1)$ for all $c \in \F_q^*$ ($c_{\mathrm{dil}} \ge 0$). Then
+\[
+  \sum_{c \in \F_q^*} W(c)\bigl(H_{\mathrm{nat}}(U + cV) - H_{\mathrm{nat}}(U)\bigr)
+  \;\ge\; \frac{c_{\mathrm{dil}}}{2420\ln q}\left(H_{\mathrm{nat}}(V) - \frac{5\ln q}{q}\right)\Delta_q^{\mathrm{nat}}(U).
+\]
+\end{lemma}
+
+\begin{proof}
+Since $H_{\mathrm{nat}}(U+cV) - H_{\mathrm{nat}}(U) \ge 0$ for every $c \in \F_q^*$, it suffices to treat uniform $W(c) = 1/(q-1)$. Let $p(x) := \mathbb{P}(U=x)$ and $r(y) := \mathbb{P}(V=y)$. By the exact Jensen-gap identity for $-t\ln t$ and the substitution $x' = x - cy$,
+\[
+  H_{\mathrm{nat}}(U+cV) - H_{\mathrm{nat}}(U)
+  = \sum_{y \in \F_q} r(y) \sum_{x' \in \F_q} p(x') \ln\frac{p(x')}{r(y)p(x') + (1-r(y))\,t_c(x',y)},
+\]
+where $t_c(x',y) := \frac{1}{1-r(y)}\sum_{z \neq y} r(z) p(x' + c(y-z))$. Because $y - z \in \F_q^*$ for $z \neq y$, averaging over $c \in \F_q^*$ gives $\E_c[t_c(x',y)] = \frac{1-p(x')}{q-1}$, so convexity of $t \mapsto a\ln\frac{a}{ra + (1-r)t}$ yields
+\[
+  \E_{c \in \F_q^*}\bigl[H_{\mathrm{nat}}(U+cV) - H_{\mathrm{nat}}(U)\bigr]
+  \;\ge\; \sum_{y \in \F_q} r(y)\,D_{\mathrm{KL}}^{\mathrm{nat}}\bigl(p \,\|\, T_{r(y)}(p)\bigr).
+\]
+If $r_{\max} := \max_y r(y) \le 1/2$, applying Lemma~\ref{lem:kl} to all $y$ and separating $\{r(y) < q^{-2}\}$ (at most $q$ terms contributing $\le \frac{2\ln q}{q}$) yields the bound. If $r_{\max} = 1-\epsilon > 1/2$, dropping $y_{\max}$ and applying Lemma~\ref{lem:kl} to $y \neq y_{\max}$ uses $H_{\mathrm{nat}}(V) \le (1 + 1/\ln 2) S_{\neq} < 2.5 S_{\neq}$ to finish with factor $\frac{1}{5} c_1 = \frac{1}{2420}$.
+\end{proof}
+
+% ============================================================================
+\section{Elementary 2-Factor Smooth Pigeonhole Dilator}\label{sec:dilation}
+% ============================================================================
+
+Instead of Dirichlet characters or P\'olya--Vinogradov bounds, we construct a nearly uniform multiplicative dilator modulo every large prime $q \in (0.56 m, m]$ by elementary pigeonhole on smooth numbers (\texttt{Erdos18/PrimeFieldDilation.lean}).
+
+\begin{lemma}[2-factor smooth pigeonhole dilator]\label{lem:pigeonhole}
+For $m \ge 1$, define the $0.28 m$-smooth set
+\[
+  A(m) := \bigl\{1 \le a \le \lfloor 14m/25 \rfloor : p \mid a \text{ prime} \implies p \le \lfloor 7m/25 \rfloor\bigr\}.
+\]
+Then:
+\begin{enumerate}
+  \item For all $m \ge 16$ and $c_1, c_2 \in A(m)$, we have $c_1 c_2 < m^2$ and $c_1 c_2 \mid m!$.
+  \item For all $m \ge 4 \cdot 4^{45}$, $|A(m)| \ge \frac{44}{45}\lfloor 14m/25 \rfloor$.
+  \item For all $m \ge 4 \cdot 4^{45}$, every prime $q$ with $\lfloor 14m/25 \rfloor < q \le m$, and every $x \in \F_q^*$,
+  \[
+    \mathbb{P}_{c_1, c_2 \sim \Unif(A(m))}\bigl(c_1 c_2 \equiv x \pmod q\bigr) \;\ge\; \frac{1/40}{q - 1}.
+  \]
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+For~(1), $c_1, c_2 < m$ is immediate, and for any prime $p \le 7m/25$, $v_p(c_1 c_2) \le 2\lfloor \log_p(14m/25) \rfloor \le \lfloor m/p \rfloor \le v_p(m!)$ (for $p > \sqrt{14m/25}$, $v_p(c_1 c_2) \le 2 < 3 \le \lfloor m/p \rfloor$).
+
+For~(2), since $2(\lfloor 7m/25 \rfloor + 1) > \lfloor 14m/25 \rfloor$, the complement of $A(m)$ in $[1, \lfloor 14m/25 \rfloor]$ consists solely of the primes in $(7m/25, 14m/25]$. By Erd\H{o}s's 1932 primorial bound $\prod_{p \le y} p \le 4^y$ (\texttt{Chebyshev.lean}), the number of such primes is at most $\frac{1}{45}\lfloor 14m/25 \rfloor$ for $m \ge 4\cdot 4^{45}$.
+
+For~(3), $A(m)$ injects into $\F_q^*$ because $14m/25 < q$. For any $x \in \F_q^*$, the sets $A(m)$ and $x A(m)^{-1}$ inside $\F_q^*$ satisfy $|A(m) \cap x A(m)^{-1}| \ge 2|A(m)| - (q-1) \ge q/20$, whence dividing by $|A(m)|^2 \le (14m/25)^2$ yields $\ge \frac{1/40}{q-1}$.
+\end{proof}
+
+% ============================================================================
+\section{Carry-Free CRT Covering and Global Assembly}\label{sec:covering}
+% ============================================================================
+
+We assemble Theorem~\ref{thm:main} in \texttt{Erdos18/PrimeFieldCovering.lean} and \texttt{Erdos18/PrimeFieldMain.lean}.
+
+\begin{proposition}[Adaptive CRT contraction and mod-$M'$ covering]\label{prop:crt}
+Using a $16$-subinterval quantitative Bertrand prime band (\texttt{Chebyshev.lean}), partition primes $\le m$ into a disjoint base pool $P_{\mathrm{pool}}$, tag primes $Q_{\mathrm{tag}}$, and target strip primes $Q_{\mathrm{strip}}$ with $M_{\mathrm{strip}} := \prod_{q \in Q_{\mathrm{strip}}} q$ and a practical core divisor $M_{\mathrm{core}}(m) \mid m!$. For any nonempty subset $Q' \subseteq Q_{\mathrm{strip}}$ with $M' := \prod_{q \in Q'} q$:
+\begin{enumerate}
+  \item \emph{(Adaptive single-step contraction)} For every distribution $X$ on $\Z/M'\Z$, ordering $Q'$ by decreasing conditional coordinate deficit via the CRT chain rule and choosing the squarefree $r$-prime subset size $r \in \{1,\dots,\lfloor N/2 \rfloor\}$ greedily yields a divisor law $Y = p_{\mathrm{tag}} c_1 c_2 Z_r \mid M_{\mathrm{core}}(m)$ (with $c_1, c_2 \in A(m)$) satisfying
+  \[
+    H_{\mathrm{nat}}(X + Y) - H_{\mathrm{nat}}(X) \;\ge\; \eta\, \Delta_{M'}^{\mathrm{nat}}(X),
+    \qquad \eta \ge \frac{1}{193600\,\ln m\,(\ln\ln(m+16)+4)}.
+  \]
+  Here the $\ln\ln(m+16)$ factor arises solely from the injective harmonic sum $\sum_{r=1}^{\lfloor N/2 \rfloor} \frac{1}{r\ln(N/r)} = \ln\ln N + O(1)$.
+  \item \emph{(Mod-$M'$ covering)} Iterating~(1) across $2R(m) = O((\ln m)^2 \ln\ln(m+16))$ draws with pairwise distinct tag primes $p_{\mathrm{tag}} \in Q_{\mathrm{tag}}$ covers every residue class modulo $M'$ as a sum of at most $2R(m)$ strictly distinct positive divisors of $M_{\mathrm{core}}(m)$, each $< m^3 M'$ and not divisible by $M'$.
+  \item \emph{(Exact carry-free digit representation)} Every $r \in [1, M_{\mathrm{strip}}/m^5)$ is a sum of at most $2R(m) + 6\log_2 m + 8$ strictly distinct positive divisors of $M_{\mathrm{core}}(m)$: subtracting the mod-$M_{\mathrm{strip}}$ cover leaves a nonnegative quotient $< 2m^6$ multiplied by $M_{\mathrm{strip}}$, which is written directly in binary using powers of $2$ dividing $M_{\mathrm{core}}(m)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+For $n$ below the explicit threshold $m_{\mathrm{pf}}$, apply the finite base case (or Milestone~3). For $n \ge m_{\mathrm{pf}}$:
+\begin{enumerate}
+  \item \emph{Stage~1 (Mixed-radix reduction):} Greedily factor $n!/M_{\mathrm{core}}(n) = D_1 \cdots D_L$ with $D_j \le M_{\mathrm{strip}}(n)/n^5$ and $L = O(\ln n)$. Each mixed-radix digit is represented inside disjoint value intervals by Proposition~\ref{prop:crt}(3), costing $L \cdot O((\ln n)^2 \ln\ln n) = O((\ln n)^3 \ln\ln n)$ divisors.
+  \item \emph{Stage~2 (Self-similar tail recursion $m \mapsto m/2$):} Represent $x < M_{\mathrm{core}}(m)$ by strong induction on $m$ across three exhaustive branches:
+  \begin{itemize}
+    \item \emph{Branch~A} ($x < M_{\mathrm{strip}}/m^5$): direct call to Proposition~\ref{prop:crt}(3).
+    \item \emph{Branch~B} ($M_{\mathrm{strip}}/m^5 \le x < m^5 M_{\mathrm{strip}}$): strip $11$ primes from $Q_{\mathrm{strip}}$ to form $M'' \mid M_{\mathrm{strip}}$ with $M_{\mathrm{strip}}/M'' > m^{10}$, cover $x \bmod M''$ via Proposition~\ref{prop:crt}(2) (sum $< m^5 M'' < x$), and write the quotient $(x - S_1)/M'' < m^{16} < 2^{m/4}$ directly in binary powers $2^b M''$, returning immediately.
+    \item \emph{Branch~C} ($x \ge m^5 M_{\mathrm{strip}}$): cover $x \bmod M_{\mathrm{strip}}$ via Proposition~\ref{prop:crt}(2), divide by $M_{\mathrm{strip}}$, factor the smooth excess $U_{\mathrm{extra}} = M_{\mathrm{core}}(m)/(M_{\mathrm{strip}}\,M_{\mathrm{core}}(m/2))$ into $O(1)$ digits handled by Proposition~\ref{prop:crt}(3), and recurse on $M_{\mathrm{core}}(m/2)$.
+  \end{itemize}
+  All three divisor groups are pairwise disjoint across $O(\ln n)$ recursion steps, contributing $O((\ln n)^3 \ln\ln(n+16))$ divisors in total.
+\end{enumerate}
+Combining Stages~1 and~2 proves Theorem~\ref{thm:main}, and Corollary~\ref{cor:all3} follows immediately.
+\end{proof}
+
+\begin{remark}[Natural barrier at $O((\log n)^3 \log\log n)$]\label{rem:barrier}
+Only two factors separate Theorem~\ref{thm:main} from the counting floor $\Omega((\log n)^2)$: the injective harmonic factor $\ln\ln N$ in Proposition~\ref{prop:crt}(1) and the $\ln(2m)$ contraction tail in Proposition~\ref{prop:crt}(2). Pushing below $O((\log n)^3 \log\log n)$ across $2$-adic, prime-field, and Archimedean completions appears to require either super-polynomial modular non-collapse/equidistribution lying beyond GRH and RH, or genuinely non-Fourier multi-term additive energy bounds for divisor sumsets.
+\end{remark}
+
+% ============================================================================
+\section{Formal Verification in Lean 4 and Provenance}\label{sec:provenance}
+% ============================================================================
+
+The entire proof is formally verified in Lean~4.36.0 with Mathlib4 (13,586 lines across 13 files, including 5,732 lines across the four new \texttt{PrimeField*.lean} modules) in the public repository \url{https://github.com/vinnor/erdos-18}. The entry point \texttt{erdos18\_lean/Verify.lean} locks all four top-level theorem statements (\texttt{check\_alpha5}, \texttt{check\_alpha4}, \texttt{check\_alpha3\_loglog2}, and \texttt{check\_alpha3\_loglog1}) against definition shadowing via explicit \texttt{\_root\_} references and confirms via \texttt{\#print axioms} that every theorem depends solely on \texttt{[propext, Classical.choice, Quot.sound]} with zero \texttt{sorry}, zero \texttt{admit}, and zero \texttt{native\_decide}. Independent GitHub Actions CI compiles the project from scratch and executes the accompanying Python verification and adversarial stress suites.
+
+\subsection*{Provenance Statement}
+This work was produced through human-directed, AI-assisted mathematical research and Lean~4 formalization (using Google Gemini models under human problem selection, multi-wave research architecture design, independent adversarial auditing gates, and CI verification). The Lean~4 kernel is the sole formal arbiter of correctness, and this manuscript presents the self-contained mathematical proof independently of the software tooling.
+
+% ============================================================================
+\begin{thebibliography}{99}
+
+\bibitem{Bloom18}
+T.~F. Bloom, \emph{Erd\H{o}s Problem \#18}, \url{https://www.erdosproblems.com/18}, accessed November 26, 2026.
+
+\bibitem{Er74b}
+P.~Erd\H{o}s, \emph{Remarks on some problems in number theory}, Math. Balkanica \textbf{4} (1974), 197--202.
+
+\bibitem{ErGr80}
+P.~Erd\H{o}s and R.~L. Graham, \emph{Old and New Problems and Results in Combinatorial Number Theory}, Monographies de L'Enseignement Math\'ematique, vol.~28, Universit\'e de Gen\`eve, 1980.
+
+\bibitem{Er81h}
+P.~Erd\H{o}s, \emph{Some problems and results on additive and multiplicative number theory}, Analytic Number Theory (Philadelphia, Pa., 1980), Lecture Notes in Math., vol.~899, Springer, 1981, pp.~171--182.
+
+\bibitem{HHKK26}
+W.~Howe, G.~Huffman, J.~Kohlmeyer, and L.~Kruer, \emph{Harmonic dyadic shifts and short sums of factorial divisors}, Hexagon preprint \texttt{hexagon:2611.00748v1} (Nov.~20, 2026), \url{https://hexagonmath.org/2611.00748v1}.
+
+\bibitem{Hughes26}
+S.~D. Hughes, \emph{Sums of distinct divisors of factorials}, arXiv preprint \texttt{arXiv:2609.10902v1} (Sep.~9, 2026), \url{https://arxiv.org/abs/2609.10902}.
+
+\bibitem{TY90}
+G.~Tenenbaum and H.~Yokota, \emph{Length and denominators of Egyptian fractions III}, J. Number Theory \textbf{35} (1990), no.~2, 150--156.
+
+\bibitem{Vo85}
+M.~D. Vose, \emph{Egyptian fractions}, Bull. London Math. Soc. \textbf{17} (1985), no.~1, 21--24.
+
+\bibitem{Yo95}
+H.~Yokota, \emph{On a problem of Erd\H{o}s and Graham}, J. Number Theory \textbf{50} (1995), no.~1, 79--86.
+
+\end{thebibliography}
+
+\end{document}

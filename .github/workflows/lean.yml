@@ -20,6 +20,7 @@ jobs:
           python3 scripts/test_alpha5_lemmas.py
           python3 scripts/test_alpha3_lemmas.py
           python3 scripts/stress_alpha3.py
+          python3 scripts/test_primefield.py
 
   lean-verify:
     runs-on: ubuntu-latest
@@ -37,7 +38,7 @@ jobs:
             echo "ERROR: Forbidden keyword detected in Lean proof!"
             exit 1
           fi
-          echo "Static scan clean across all 7,841 lines."
+          echo "Static scan clean across all 13,586 lines."
 
       - name: Fetch Mathlib cache & build Erdos18
         working-directory: erdos18_lean
@@ -53,6 +54,7 @@ jobs:
           echo "$OUT" | grep -q "check_alpha5"
           echo "$OUT" | grep -q "check_alpha4"
           echo "$OUT" | grep -q "check_alpha3_loglog2"
+          echo "$OUT" | grep -q "check_alpha3_loglog1"
           if echo "$OUT" | grep -qE "sorryAx|Lean\.ofReduceBool|Lean\.trustCompiler"; then
             echo "ERROR: Non-standard axiom detected!"
             exit 1

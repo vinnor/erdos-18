@@ -1,81 +1,83 @@
-# Elementary Proof of $h(n!) = O((\log n)^3 (\log\log(n+16))^2)$ (Erdős Problem #18)
+# Elementary Carry-Free Proof of $h(n!) = O((\log n)^3 \log\log(n+16))$ (Erdős Problem #18)
 
-This document presents the complete, self-contained elementary proof formalized end-to-end in Lean 4 + Mathlib4 under `erdos18_lean/` (`Erdos18.erdos18_alpha3_loglog2` and its corollary `Erdos18.erdos18_alpha4`).
+This document presents the complete, self-contained elementary proof formalized end-to-end in Lean 4 + Mathlib4 under `erdos18_lean/` (`Erdos18.erdos18_alpha3_loglog1`, together with the earlier 2-adic milestones `erdos18_alpha3_loglog2`, `erdos18_alpha4`, and `erdos18_alpha5`).
 
-## 1. Definitions & Main Theorems
+## 1. Definitions & Main Theorem
 
 - A positive integer $m$ is **practical** if every integer $1 \le t \le m$ is a sum of distinct positive divisors of $m$.
 - For a practical integer $m$, $h(m)$ is the least integer such that every $1 \le t \le m$ is a sum of at most $h(m)$ distinct positive divisors of $m$.
 
-**Theorem (`Erdos18.erdos18_alpha3_loglog2`).** There exists an absolute constant $C > 0$ such that for every integer $n \ge 2$ and every integer $1 \le t \le n!$, there exists a finite set $S$ of positive divisors of $n!$ with $\sum_{d \in S} d = t$ and
-$$|S| \le C (\ln n)^3 \big(\ln\ln(n + 16)\big)^2.$$
+**Theorem (`Erdos18.erdos18_alpha3_loglog1`).** There exists an absolute constant $C > 0$ such that for every integer $n \ge 2$ and every integer $1 \le t \le n!$, there exists a finite set $S$ of positive divisors of $n!$ with $\sum_{d \in S} d = t$ and
+$$|S| \le C (\ln n)^3 \ln\ln(n + 16).$$
 
-**Corollary (`Erdos18.erdos18_alpha4`).** Since $(\ln\ln(n+16))^2 \le 20 \ln n$ for all $n \ge 2$, $h(n!) = O((\ln n)^4)$ unconditionally.
+**Immediate Corollaries.** Since $n!$ is practical and $\ln\ln(n!) = \ln n + O(\ln\ln n)$, the single theorem above simultaneously resolves all three parts of Erdős Problem #18:
+- **18(a):** $h(m) < (\ln\ln m)^4$ for infinitely many practical integers $m = n!$;
+- **18(b):** $h(n!) < n^{o(1)}$;
+- **18(c):** $h(n!) = O((\ln n)^3 \ln\ln(n + 16)) = O((\ln n)^4)$.
 
-Let $E = v_2(n!) = n - s_2(n)$, $P_y := \prod_{3 \le p \le y} p$ (odd primorial, with $P_y = 1$ for $y < 3$), and $\pi_{\mathrm{odd}}(y) := |\{p \text{ prime} : 3 \le p \le y\}|$.
+Throughout, all entropies are measured in nats: $H_{\mathrm{nat}}(X) := -\sum_x p(x)\ln p(x)$ and $\Delta_q^{\mathrm{nat}}(U) := \ln q - H_{\mathrm{nat}}(U) = D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, u_q)$ on $\mathbb{F}_q = \mathbb{Z}/q\mathbb{Z}$.
 
-## 2. Elementary Prime-Number Inputs (`Erdos18/Chebyshev.lean`)
+## 2. Why Leave $\mathbb{Z}/2^k\mathbb{Z}$ for $\prod_{q \in Q'} \mathbb{F}_q$?
 
-Zero analytic number theory is used beyond four elementary facts from Erdős (1932) via central binomial coefficients $\binom{2m}{m}$:
+In 2-adic covering modulo $2^k$ (our earlier Milestone 3, `Alpha3Covering.lean`), binary carries force a bitwise chain rule with convex variance envelope $f_4(u) = u/\ln(4/u)$, incurring an unavoidable $\ln(4/g) = \Theta(\log\log n)$ penalty on top of the $\Theta(\log n \cdot \log\log n)$ scale-selection integral — locking 2-adic entropy bounds at $O((\log n)^3 (\log\log n)^2)$.
 
-1. **Primorial upper bound (`oddPrimorial_lt_two_pow`):** $\prod_{p \le y} p \le 4^y$ for all $y \ge 1$, so omitting $p = 2$, $P_{\lfloor m/2 \rfloor} < 2^m$ for all $m \ge 1$.
-2. **Chebyshev lower bounds (`prime_counting_lower`, `prefix_entropy_rate_lower`):** Explicit absolute constants $c_0 \in (0, 1/2]$ and $c_1 \in (0, 1]$ satisfy $\pi_{\mathrm{odd}}(y) \ge c_0 \frac{y}{\log_2 y}$ for $y \ge 3$ and $1 + \frac{1}{2}\pi_{\mathrm{odd}}(\lfloor m/2 \rfloor) \ge \frac{c_1 m}{\log_2(m+2)}$ for all $m \ge 1$.
-3. **Quantitative Bertrand (`bertrand_quantitative`):** $\pi_{\mathrm{odd}}(2y) - \pi_{\mathrm{odd}}(y) \ge c_B \frac{y}{\ln y}$ for all $y \ge y_0$, guaranteeing $\pi_{\mathrm{odd}}(\lfloor k/2 \rfloor) - \pi_{\mathrm{odd}}(\lfloor (k+1)/4 \rfloor) \ge 2R^*(k)$ for sufficiently large $k$ and $\pi_{\mathrm{odd}}(\lfloor E/4 \rfloor) - \pi_{\mathrm{odd}}(\lfloor (k+1)/4 \rfloor) \ge 2R^*(k)$ for $k = \lfloor 0.45 E \rfloor$ and sufficiently large $E$.
-4. **Stage 2 binomial divisibility (`uTop_dvd_choose`):** For $E \ge 84$, $k = \lfloor 0.45 E \rfloor$, $E_{\mathrm{next}} = E - k$, $a = \lfloor E/4 \rfloor$, and $b = \lfloor E_{\mathrm{next}}/4 \rfloor$: $2b > a$ and $U_{\mathrm{top}} := \prod_{b < p \le a} p \mid \binom{a}{b} < 2^a \le 2^{0.25 E} < 2^{\lfloor E_{\mathrm{next}}/2 \rfloor}$.
+Working instead modulo a squarefree product of large primes $M' = \prod_{q \in Q'} q$ via CRT $\mathbb{Z}/M'\mathbb{Z} \cong \prod_{q \in Q'} \mathbb{F}_q$ has two decisive advantages:
+1. **Zero carries across coordinates:** Every prime factor $q \in Q'$ acts as an independent prime field $\mathbb{F}_q$ with no nontrivial proper subgroups or nested ideals.
+2. **Linear entropy gain via multiplicative dilation:** Averaging $U + cV$ over $c \in \mathbb{F}_q^*$ gives entropy gain **linear** in $H_{\mathrm{nat}}(V)$ (eliminating $f_4$'s $\ln(4/g)$ loss unconditionally), and the random multiplier $c \in \mathbb{F}_q^*$ is supplied by an elementary **2-factor smooth Finset pigeonhole** product $c_1 c_2 \mid m!$ with zero character sums or Pólya–Vinogradov.
 
-## 3. Sharp Convex Entropy–Variance & Bitwise Gain (`Erdos18/Alpha3Entropy.lean`)
+## 3. Pointwise KL Contraction & Universal $\mathbb{F}_q$ Dilation (`Erdos18/PrimeFieldEntropy.lean`)
 
-### Lemma 1' (`convexOn_f4nat`, `binEntropy_f4nat_le`, `binEntropy_xor_gain_f4nat`)
+### Lemma 1 (`pointwise_kl_contraction_le`)
 
-Define $f_4 : [0, 1] \to [0, \infty)$ by $f_4(0) := 0$ and $f_4(u) := \frac{u}{\ln(4/u)}$ for $u \in (0, 1]$, with $\psi(u) := 1/f_4(u) = \frac{\ln(4/u)}{u}$.
+Let $q \ge 3$ be an integer, $p$ a probability distribution on $\mathbb{Z}/q\mathbb{Z}$, and $r \in (0, 1/2]$. Define
+$$T_r(p)(x) := r\,p(x) + (1 - r)\frac{1 - p(x)}{q - 1}.$$
+Then with absolute constant $c_1 := \frac{1}{484}$,
+$$D_{\mathrm{KL}}^{\mathrm{nat}}\big(p \,\|\, T_r(p)\big) \;\ge\; \frac{1}{484} \cdot \frac{\min(\ln(1/r),\, \ln q)}{\ln q} \cdot \Delta_q^{\mathrm{nat}}(p).$$
 
-1. $f_4$ is continuous, strictly increasing, and strictly convex on $[0, 1]$ ($f_4'(u) = \frac{L+1}{L^2} > 0$, $f_4''(u) = \frac{L+2}{u L^3} > 0$ where $L = \ln(4/u) \ge \ln 4$).
-2. For all $q \in [0, 1]$ with $\beta = |1 - 2q|$:
-   $$1 - \beta^2 = 4q(1-q) \ge (\ln 2)\, f_4\big(h_2(q)\big).$$
-   *Proof:* By symmetry assume $q \in (0, 1/2]$. From $4q(1-q) \ge 2(\ln 2)^2 h_2(q)^2$, $h_2(q) \le \frac{\sqrt{2q}}{\ln 2}$, so $\frac{4}{h_2(q)} \ge \sqrt{\frac{8(\ln 2)^2}{q}} > \sqrt{\frac{e}{q}}$ and $\ln(4/h_2(q)) > \frac{1}{2}\ln(e/q)$. Meanwhile $(\ln 2) h_2(q) = q\ln(1/q) + (1-q)\ln(1 + \frac{q}{1-q}) \le q\ln(e/q)$. Dividing gives $(\ln 2) f_4(h_2(q)) < 2q \le 4q(1-q)$.
-3. For all $p, q \in [0, 1]$ with $\alpha = |1 - 2p|$, $\beta = |1 - 2q|$:
-   $$h_2\!\left(\frac{1-\alpha\beta}{2}\right) - h_2\!\left(\frac{1-\alpha}{2}\right) \ge (1-\beta^2)\left(1 - h_2\!\left(\frac{1-\alpha}{2}\right)\right).$$
+*Proof.* Put $\theta := \frac{qr - 1}{q - 1}$ and $u_x := q p(x)$, so $q T_r(p)(x) = 1 + \theta(u_x - 1)$.
+- If $r \le 1/q$, then $\theta \le 0$ and $\ln(1 + z) \le z$ plus Cauchy–Schwarz ($q\sum p(x)^2 \ge 1$) yield $D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_r(p)) \ge \Delta_q^{\mathrm{nat}}(p)$.
+- If $r \in (1/q, 1/2]$, then $\theta \in (0, 1/2)$, $\theta < r$, and setting $B(u) := u\ln u - (u-1)$ and $g_\theta(u) := u\ln\frac{u}{\theta u + 1 - \theta} - (1-\theta)(u-1)$ gives $\Delta_q^{\mathrm{nat}}(p) = \frac{1}{q}\sum_x B(u_x)$ and $D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_r(p)) = \frac{1}{q}\sum_x g_\theta(u_x)$. On $u \in [0, 10/\theta]$, $g_\theta''(u) = \frac{(1-\theta)^2}{u(\theta u + 1 - \theta)^2} \ge \frac{1}{484} B''(u)$ integrates twice from $u = 1$; on $u \in (10/\theta, q]$, direct comparison yields $g_\theta(u) > 0.14\,u\ln(1/r) \ge \frac{1}{484}\frac{\ln(1/r)}{\ln q} B(u)$. $\square$
 
-### Lemma 2' (`Hnat_conv_sub_ge_bitwise_f4nat`)
+### Lemma 2 (`fq_uniform_dilation_entropy_gain`, `fq_general_dilation_entropy_gain`)
 
-For independent random variables $X, Z$ on $\mathbb{Z}/2^k\mathbb{Z}$, with $\gamma_j(Z) := H(z_j \mid Z_{<j})$ and $\delta_j(X) := 1 - H(x_j \mid X_{<j})$:
-$$H(X + Z) - H(X) \ge (\ln 2) \sum_{j=0}^{k-1} f_4\big(\gamma_j(Z)\big)\, \delta_j(X).$$
+For every prime $q \ge 3$ and independent random variables $U, V$ on $\mathbb{F}_q$,
+$$\frac{1}{q - 1} \sum_{c \in \mathbb{F}_q^*} \big(H_{\mathrm{nat}}(U + cV) - H_{\mathrm{nat}}(U)\big) \;\ge\; \frac{1}{2420\ln q}\left(H_{\mathrm{nat}}(V) - \frac{5\ln q}{q}\right)\Delta_q^{\mathrm{nat}}(U).$$
+More generally, for any probability weights $W$ on $\mathbb{F}_q^*$ satisfying $W(c) \ge c_{\mathrm{dil}} / (q - 1)$ for all $c \in \mathbb{F}_q^*$, the weighted average gain is at least $c_{\mathrm{dil}}$ times the right-hand side.
 
-*Proof:* Follow the bitwise chain rule and bijection $(U_{<j}, Z_{<j}) \leftrightarrow (X_{<j}, Z_{<j})$ to obtain $H(X+Z) - H(X) \ge \sum_{j=0}^{k-1} \mathbb{E}_b[4q_b(1-q_b)]\,\delta_j(X)$, apply Lemma 1'(2) pointwise, and apply Jensen's inequality for convex $f_4$ on $[0, 1]$. $\square$
+*Proof.* Express $H_{\mathrm{nat}}(U + cV) - H_{\mathrm{nat}}(U)$ via the exact Jensen-gap identity for $-t\ln t$, apply convexity of $t \mapsto a\ln\frac{a}{ra + (1-r)t}$ over $c \in \mathbb{F}_q^*$ (using $\mathbb{E}_{c \in \mathbb{F}_q^*}[p(x' + c(y-z))] = \frac{1 - p(x')}{q - 1}$ for $z \neq y$) to get $\ge \sum_y r(y) D_{\mathrm{KL}}^{\mathrm{nat}}(p \,\|\, T_{r(y)}(p))$, and apply Lemma 1 (handling $r_{\max} \le 1/2$ directly and $r_{\max} > 1/2$ by dropping $y_{\max}$ and using $H_{\mathrm{nat}}(V) < 2.5 S_{\neq}$). $\square$
 
-## 4. Full-Pool $s$-Prime Subsets & Weighted Dyadic Covering (`Erdos18/Alpha3Covering.lean`)
+## 4. Elementary 2-Factor Smooth Pigeonhole Dilator (`Erdos18/PrimeFieldDilation.lean`)
 
-### Lemma 3A* (`SigmaStar_le`)
+### Lemma 3 (`two_factor_smooth_dilator_prob`, `two_factor_smooth_entropy_gain`)
 
-Let $k \ge 2$, $L := \lfloor \log_2(\lfloor (k+1)/2 \rfloor) \rfloor + 1$, and $x := \lfloor (k+1)/4 \rfloor$. For each $t \in \{0, \dots, L-1\}$, let $m := 2^t$ and choose $\mathcal{D}_{k,t}$ of maximum cardinality among four sets of positive odd divisors of $P_x$ below $2^m$:
-- $\mathcal{D}^{(0)}_{k,t} := \{1\}$,
-- $\mathcal{D}^{(A)}_{k,t} := \{p \text{ odd prime} : 3 \le p \le \min(2^m - 1, x)\}$,
-- $\mathcal{D}^{(B)}_{k,t} := \left\{\prod_{p \in A} p : A \subseteq \{3 \le p \le x \text{ prime}\},\; |A| = s\right\}$ where $s := \max\{s' \ge 0 : x^{s'} < 2^m\}$ (when $1 \le s \le \pi_{\mathrm{odd}}(x)$),
-- $\mathcal{D}^{(C)}_{k,t} := \mathrm{Div}(P_{\lfloor m/2 \rfloor})$.
+Define the $0.28 m$-smooth set
+$$A(m) := \left\{1 \le a \le \lfloor 14m/25 \rfloor : P^+(a) \le \lfloor 7m/25 \rfloor\right\}.$$
+1. **Exact divisibility:** For every $m \ge 16$ and $c_1, c_2 \in A(m)$, $c_1 c_2 < m^2$ and $c_1 c_2 \mid m!$ (each prime $p \in (\sqrt{m}, 0.28m]$ appears at most twice in $c_1 c_2$, while $v_p(m!) \ge \lfloor 1/0.28 \rfloor = 3$).
+2. **Chebyshev cardinality (`smoothSet_card_ge`):** Since $2(\lfloor 7m/25 \rfloor + 1) > \lfloor 14m/25 \rfloor$, the only excluded elements of $[1, \lfloor 14m/25 \rfloor]$ are primes in $(7m/25, 14m/25]$. Erdős's 1932 primorial bound $\prod_{p \le y} p \le 4^y$ yields $|A(m)| \ge \frac{44}{45}\lfloor 14m/25 \rfloor > \frac{q-1}{2}$ for all $m \ge 4 \cdot 4^{45}$ and prime $q \in (14m/25, m]$.
+3. **Finset pigeonhole on $\mathbb{F}_q^*$:** Since $A(m) \hookrightarrow \mathbb{F}_q^*$ is injective, for every $x \in \mathbb{F}_q^*$, $|A(m) \cap x A(m)^{-1}| \ge 2|A(m)| - (q - 1) \ge q/20$, giving
+   $$\mathbb{P}_{c_1, c_2 \sim \mathrm{Unif}(A(m))}\big(c_1 c_2 \equiv x \pmod q\big) \;\ge\; \frac{1/40}{q - 1}.$$
 
-Set $Z_{k,t} := \frac{1}{2}\delta_0 + \frac{1}{2}\mathrm{Unif}(\mathcal{D}_{k,t})$ and $g_{k,t} := \frac{1 + \frac{1}{2}\log_2|\mathcal{D}_{k,t}|}{2^t} \in [\frac{1}{m}, 1]$. Partitioning $\{0, \dots, L-1\}$ into four regimes:
-- **Regime 0 ($m < M_0$):** $O(1)$ terms, bounded by $O(\Phi(k))$.
-- **Regime 1 ($M_0 \le m \le 2\log_2 x$):** Candidate A gives $g_{k,t} \ge 1/8$ across $O(\log\log x)$ terms.
-- **Regime 2 ($2\log_2 x < m \le \frac{c_0}{2} x$):** Candidate B + $\binom{N}{s} \ge (N/s)^s$ gives $g_{k,t} \ge \frac{u}{4\log_2 x}$ with $u = t_2 - t + 1 \in \{1, \dots, \lfloor \log_2 x \rfloor\}$, summing via $\sum_{u=1}^U \frac{1}{u} \le 1 + \ln U$ to $O(\log_2 x \cdot (\ln\log_2 x)^2)$.
-- **Regime 3 ($m > \frac{c_0}{2} x$):** $O(1)$ terms, each with Candidate C density $g_{k,t} \ge c_1/\log_2(k+2)$.
+Combining Lemmas 2 and 3 yields universal prime-field dilation entropy gain with $c_{\mathrm{dil}} = 1/40$, using zero character sums and zero analytic number theory. $\square$
 
-Hence there exists an explicit constant $C^*_\Sigma > 0$ such that for all $k \ge 2$,
-$$\Sigma^*(k) := \sum_{t=0}^{L-1} \psi(g_{k,t}) \le C^*_\Sigma\, \log_2(k+2)\,\big(\ln\ln(k+16)\big)^2.$$
+## 5. Carry-Free CRT Covering & Stage 1–2 Assembly (`PrimeFieldCovering.lean`, `PrimeFieldMain.lean`)
 
-### Lemma 3B* (`mod_two_pow_covering_alpha3`)
+### Lemma 4 (`adaptive_dilation_contraction`)
 
-Define $Y = 2^s Z_{k,t}$ by sampling $t$ with weight $w_t := \psi(g_{k,t}) / \Sigma^*(k)$ and $s \sim \mathrm{Unif}(S_t)$ where $S_t := \{0, \dots, \min(2^{t+1}-1, k-2^t)\} \cup \{\max(0, k - 3\cdot 2^t + 1), \dots, k-2^t\}$ ($|S_t| \le 4\cdot 2^t$). By concavity, Lemma 2', and Jensen on $f_4$, every bit $0 \le j < k$ receives weight
-$$W_j \ge (\ln 2)\frac{w_{t^*}}{4}\, f_4(g_{k,t^*}) = \frac{\ln 2}{4\,\Sigma^*(k)} =: \eta^*,$$
-giving uniform contraction $H(X + q_r Y) - H(X) = H(q_r^{-1} X + Y) - H(q_r^{-1} X) \ge \eta^*(k - H(X))$ for any odd tag prime $q_r$. With $R^*(k) := \lceil \frac{4\,\Sigma^*(k)\ln(2k)}{\ln 2} \rceil = O((\log k)^2 (\log\log k)^2)$ and $2R^*(k)$ distinct odd tag primes $q_r \in (\lfloor (k+1)/4 \rfloor, Q_{\max}]$, two independent halves satisfy $|\mathrm{supp}(S_R)| > 2^{k-1}$ and cover $\mathbb{Z}/2^k\mathbb{Z}$ by pigeonhole in at most $2R^*(k)$ strictly distinct positive divisors of $2^k P_{Q_{\max}}$ with $v_2 < k$ and value $< Q_{\max} \cdot 2^k$. $\square$
+Using a 16-subinterval quantitative Bertrand band (`exists_prime_band`, from `Chebyshev.lean`), separate three pairwise disjoint prime sets inside $[1, m]$: a base prime pool $P_{\mathrm{pool}}$ (for $r$-prime squarefree divisor blocks $Z_r$), tag primes $Q_{\mathrm{tag}}$, and target strip primes $Q_{\mathrm{strip}}$ with $M_{\mathrm{strip}} := \prod_{q \in Q_{\mathrm{strip}}} q$ and core divisor $M_{\mathrm{core}}(m) \mid m!$. For any distribution $X$ on $\mathbb{Z}/M'\mathbb{Z}$ ($M' = \prod_{q \in Q'} q$, $Q' \subseteq Q_{\mathrm{strip}}$):
+1. Order $Q'$ by decreasing conditional coordinate deficit via the CRT chain rule (`crt_list_dilation_entropy_gain`).
+2. Select the subset size $r \in \{1, \dots, \lfloor N/2 \rfloor\}$ adaptively by greedy top-$r$ matching; injectivity of $r$-prime products below $(q_{\min})^r$ supplies entropy $H_{\mathrm{nat}}(Z_r) \ge \ln\binom{N}{r} \ge r\ln(N/r)$, and the harmonic sum
+   $$\sum_{r=1}^{\lfloor N/2 \rfloor} \frac{1}{r\ln(N/r)} = \ln\ln N + O(1)$$
+   forces a single-step contraction rate
+   $$\eta \;\ge\; \frac{1}{193600\, \ln m\, (\ln\ln(m + 16) + 4)}$$
+   for the random divisor $Y = p_{\mathrm{tag}} c_1 c_2 Z_r \mid M_{\mathrm{core}}(m)$.
 
-## 5. Carry Recursion & Global Reduction (`Erdos18/Alpha3Main.lean`)
+### Lemma 5 & Main Theorem (`mod_Mprime_covering`, `stage2_tail_recursion_primefield`, `erdos18_alpha3_loglog1`)
 
-### Lemma 4* (`lemma4_carry_recursion_alpha3`)
+1. **Mod-$M'$ Covering:** Iterating Lemma 4 across $R(m) = O((\ln m)^2 \ln\ln(m+16))$ independent draws tagged by distinct primes in $Q_{\mathrm{tag}}$ drives the entropy deficit below $\ln 2$, forcing support $> M'/2$. Pairing two disjoint tag halves covers all of $\mathbb{Z}/M'\mathbb{Z}$ by pigeonhole in $2R(m)$ strictly distinct divisors of $M_{\mathrm{core}}(m)$, each $< m^3 M'$ and not divisible by $M'$.
+2. **Carry-Free Exact Digit Representation (`exact_digit_rep_primefield`):** For any $r < M_{\mathrm{strip}}/m^5$, subtracting the mod-$M'$ cover leaves a nonnegative quotient $< 2m^6$ divisible by $M'$, represented directly in $O(\log m)$ binary powers $2^b M'$ — **completely eliminating the $\sqrt{B}$ carry recursion**.
+3. **Stage 1 & Stage 2 (11-Prime Strip):** Mixed-radix Stage 1 factors $n!/M_{\mathrm{core}}(n)$ into $O(\log n)$ digits $< M_{\mathrm{strip}}/n^5$. Stage 2 reduces $x < M_{\mathrm{core}}(m)$ recursively from $m \to m/2$ across three exhaustive branches: Branch A ($x < M_{\mathrm{strip}}/m^5$, Lemma 5b), Branch B ($M_{\mathrm{strip}}/m^5 \le x < m^5 M_{\mathrm{strip}}$, stripping 11 primes from $Q_{\mathrm{strip}}$ so the binary quotient is $< m^{16} < 2^{m/4}$ and returning immediately), and Branch C ($x \ge m^5 M_{\mathrm{strip}}$, splitting $v_{M'}$-disjoint groups and recursing on $M_{\mathrm{core}}(m/2)$). Summing both stages yields
+   $$h(n!) = O\!\left((\ln n)^3 \ln\ln(n + 16)\right). \quad\square$$
 
-For all $E \ge 2$ and $r \in [1, 2^{\lfloor E/2 \rfloor})$ with $B = \lfloor \log_2 r \rfloor + 1$, $r$ is a sum of at most $O((\log(B+2))^2 (\log\log(B+16))^2)$ strictly distinct positive divisors of $2^E P_{\lfloor E/4 \rfloor}$. Using $k = B - \lceil \sqrt{B} \rceil$ and $Q_{\max} = \lfloor k/2 \rfloor$, the step shrinks $B \to \lceil \sqrt{B} \rceil$ while preserving $v_2$-disjointness; since $F^*(\lceil \sqrt{B} \rceil) \le \frac{9}{16} F^*(B)$ for $B \ge 16$, strong induction telescopes with constant $\frac{16}{7}$.
+## 6. Why $O((\log n)^3 \log\log n)$ Is a Natural Barrier
 
-### Stages 1–2 & Main Theorems (`erdos18_alpha3_loglog2`, `erdos18_alpha4`)
-
-Factor $n!/M(E) = D_1 \cdots D_L$ greedily with $D_j \le 2^{\lfloor E/2 \rfloor}$ and $L = O(\log n)$ (`Stage 1`), representing each mixed-radix digit via Lemma 4* in disjoint intervals $[D_1\cdots D_j, D_1\cdots D_{j+1})$. Represent the top quotient $r_L < M(E)$ via self-similar tail recursion $M(E) \to M(\lceil 0.55 E \rceil)$ (`Stage 2`), separating Group 1 ($v_2 < k$, Lemma 3B*), Group 2 ($v_2 \ge k$ and $< 2^k U_{\mathrm{top}}$, Lemma 4*), and Group 3 ($\ge 2^k U_{\mathrm{top}}$, induction). Both stages sum to
-$$h(n!) = O\!\left((\log n)^3 \big(\log\log(n+16)\big)^2\right),$$
-and consequently $h(n!) = O((\log n)^4)$. $\square$
+Two exact factors remain above the information-theoretic floor $\Omega((\log n)^2)$: (i) the injective harmonic $\log\log n$ factor $\sum_{r \le N/2} \frac{1}{r\ln(N/r)}$ from prime-product coordinate matching, and (ii) the $\Theta(\log n)$ contraction tail $\ln(2m)$. Improving beyond $O((\log n)^3 \log\log n)$ reduces across 2-adic, prime-field, and Archimedean completions either to super-polynomial modular non-collapse / equidistribution lying strictly beyond GRH+RH, or to genuinely non-Fourier multi-term additive energy bounds for divisor sumsets.

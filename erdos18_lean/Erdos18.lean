@@ -5,3 +5,7 @@ import Erdos18.MainTheorem
 import Erdos18.Alpha3Entropy
 import Erdos18.Alpha3Covering
 import Erdos18.Alpha3Main
+import Erdos18.PrimeFieldEntropy
+import Erdos18.PrimeFieldDilation
+import Erdos18.PrimeFieldCovering
+import Erdos18.PrimeFieldMain
